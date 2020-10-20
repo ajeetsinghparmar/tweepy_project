@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twapp</title>
+</head>
+<body>
+    <form action="" method="post">
+        {% if keyword %}
+        <label for="username">Keyword</label>
+        <p>You can type any number of keywords separated by space.</p>
+        <input type="text" id='keyword' name="keyword">
+        {% else %}
+        <label for="username">User Name</label>
+        <input type="text" id='username' name="username">
+        {% endif %}
+        <button type="submit">Get Info</button>
+    </form>
+</body>
+</html>

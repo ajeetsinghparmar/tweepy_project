@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td,
+        th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+    <title>Response</title>
+</head>
+
+<body>
+    <!-- <h4>{{key}}</h4> is <h5>{{result}}</h5> -->
+
+    {% if list %}
+    <table>
+        <tr>
+            <th>
+                Name
+            </th>
+            <th>
+                username
+            </th>
+            <th>
+                Followers
+            </th>
+            <th>
+                Friends
+            </th>
+        </tr>
+        {% for item in list %}
+        <tr>
+            {% for elem in item %}
+            <td>
+                {{elem}}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+
+    </table>
+
+    <!-- <img src="{{ url_for('plot_likes') }}" alt=""> -->
+    {% endif %}
+
+    {% if dict %}
+    <table>
+        <tr>
+            <th>Key</th>
+            <th>Value</th>
+        </tr>
+        {% for key, result in dict.items() %}
+        <tr>
+            <td>{{key}}</td>
+            <td>{{result}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+{% if tweets %}
+
+<table>
+    <tr>
+        <th>
+            S No
+        </th>
+        <th>
+            Tweet
+        </th>
+        <th>
+            Author username
+        </th>
+        <th>
+            Author Name
+        </th>
+    </tr>
+    {% for item in tweets %}
+    <tr>
+        {% for key, value in item.items() %}
+        <td>
+            {{value}}
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+
+</table>
+
+
+
+{% endif %}
+
+
+
+</body>
+
+</html>

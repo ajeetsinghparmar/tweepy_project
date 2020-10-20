@@ -2,3 +2,7 @@ twitter_env/
 twitter_project/images/
 twitter_config.json
 twitter_project/.ipynb_checkpoints/
+.ipynb_checkpoints/
+web_app/
+__pycache__/
+temp

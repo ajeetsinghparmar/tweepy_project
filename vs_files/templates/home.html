@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        a{
+            text-decoration: none;
+            color: blueviolet;
+        }
+    </style>
+    <title>Twapp</title>
+</head>
+<body>
+    <h3>Welcome to Twapp</h3>
+    <br>
+    <h4>You can do following tasks on our website</h4>
+    <a href="{{url_for('get_profile')}}" target="_blank" rel="noopener noreferrer">Get Info about TwitterProfile</a>
+    <br>
+    <a href="{{url_for('get_followers')}}" target="_blank" rel="noopener noreferrer">Get Info about Twitter Followers</a>
+    <br>
+    <a href="{{url_for('get_friends')}}" target="_blank" rel="noopener noreferrer">Get Info about Twitter Friends</a>
+    <br>
+    <a href="{{url_for('plot_likes')}}" target="_blank" rel="noopener noreferrer">Visualize likes of tweets on home timeline</a>
+    <br>
+    <a href="{{url_for('plot_retweets')}}" target="_blank" rel="noopener noreferrer">Visualize Retweets of tweets on home timeline</a>
+    <br>
+    <a href="{{url_for('plot_like_retweets')}}" target="_blank" rel="noopener noreferrer">Visualize both likes and Retweets of tweets on home timeline on a single plot</a>
+    <br>
+    <a href="{{url_for('plot_sentiment')}}" target="_blank" rel="noopener noreferrer">Visualize sentiments of tweets on home timeline via histogram</a>
+    <!-- <a href="{{url_for('get_profile')}}" target="_blank" rel="noopener noreferrer">Get Info about TwitterProfile</a> -->
+
+</body>
+</html>
