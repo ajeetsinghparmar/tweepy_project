@@ -42,7 +42,6 @@ class Client():
             'Followers': user.followers_count,
             'Friends': user.friends_count,
             'Id': user.id,
-            'Id_str': user.id_str,
             'Location': user.location,
             'Total statuses': user.statuses_count
         }
@@ -293,6 +292,6 @@ if __name__ == "__main__":
     # print( df[df['retweets'] == np.min(df['retweets'])])
 
     # print(df.head())
-    time_retweets = pd.DataFrame(df[['retweets', 'tweets']].values, index=df['date'])
+    # time_retweets = pd.DataFrame(df[['retweets', 'tweets']].values, index=df['date'])
 
-    print(time_retweets)
+    # print(time_retweets)
