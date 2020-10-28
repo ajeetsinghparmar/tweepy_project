@@ -14,7 +14,24 @@
         {% else %}
         <label for="username">User Name</label>
         <input type="text" id='username' name="username">
+        {% if maxmin %}
+        <br><br>
+        <label for="minfollowers">Minimum followers for resultent user</label>
+        <input type="number" name="minfollowers" id="minfollowers">
+        <br><br>
+        <label for="minfriends">Minimum friends for resultent user</label>
+        <input type="number" name="minfriends" id="minfriends">
         {% endif %}
+        {% if nummin %}
+        <br><br>
+        <label for="numtweets">Number of tweets</label>
+        <input type="number" name="numtweets" id="numtweets">
+        <br><br>
+        <label for="minlikes">Minimum likes</label>
+        <input type="number" name="minlikes" id="minlikes">
+        {% endif %}
+        {% endif %}
+        <br>
         <button type="submit">Get Info</button>
     </form>
 </body>

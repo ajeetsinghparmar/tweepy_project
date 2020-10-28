@@ -1,3 +1,6 @@
+##########################################################################################
+################################### Importing Packages ####################################
+##########################################################################################
 import tweepy
 import json
 import pandas as pd
@@ -9,6 +12,11 @@ import io
 
 import re
 
+##########################################################################################
+################################# Load configuration file #################################
+##########################################################################################
+
+
 with open('twitter_config.json') as c:
     params = json.load(c)
     
@@ -18,12 +26,18 @@ access_token = params["ACCESS_TOKEN"]
 access_token_secret = params["ACCESS_TOKEN_SECRET"]
 
 class Authenticator():
+    '''
+    To authenticate the access to twitter
+    '''
     def authenticate(self):
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
         return auth
 
 class Client():
+    '''
+    A class to fetch data from twitter
+    '''
     def __init__(self, username=None):
         self.auth = Authenticator().authenticate()
         self.api = tweepy.API(self.auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
@@ -38,7 +52,7 @@ class Client():
             'Name': user.name,
             'Description': user.description,
             'Created_at': user.created_at.strftime("%d %b, %Y, %H:%M:%S"),
-            'Total Likes by '+first_name: user.favourites_count,
+            f'Total Likes by {first_name}': user.favourites_count,
             'Followers': user.followers_count,
             'Friends': user.friends_count,
             'Id': user.id,
@@ -47,86 +61,66 @@ class Client():
         }
         return info
 
-    def get_followers(self):
+
+    def get_followers(self, minfollower=50, minfriend=50):
         """Returns the followers of given twitter user"""
         info = []
-        for follower in tweepy.Cursor(self.api.followers, screen_name = self.username).items(10):
-            username = follower.screen_name
-            name = follower.name
-            followers = follower.followers_count
-            friends = follower.friends_count
-            info.append([name, username, followers, friends])
+        def process_page(page_results):
+            for follower in page_results:
+                if follower.followers_count > minfollower and follower.friends_count > minfriend:
+                    username = follower.screen_name
+                    name = follower.name
+                    followers = follower.followers_count
+                    friends = follower.friends_count
+                    info.append([name, username, followers, friends])
+            return info                    
+        for i, page in enumerate(tweepy.Cursor(self.api.followers, screen_name=self.username, per_page=5).pages(3)):
+            print(i, "page")
+            process_page(page)
         return info
 
-    def get_friends(self):
+    def get_friends(self, minfollower=50, minfriend=50):
         """Returns the friends of given twitter user"""
         info = []
-        for friend in tweepy.Cursor(self.api.friends, screen_name = self.username).items(10):
-            username = friend.screen_name
-            name = friend.name
-            followers = friend.followers_count
-            friends = friend.friends_count
-            info.append([name, username, followers, friends])
+        def process_page(page_results):
+            for friend in page_results:
+                if friend.followers_count > minfollower and friend.friends_count > minfriend:
+                    username = friend.screen_name
+                    name = friend.name
+                    followers = friend.followers_count
+                    friends = friend.friends_count
+                    info.append([name, username, followers, friends])
+            return info                    
+        for i, page in enumerate(tweepy.Cursor(self.api.followers, screen_name=self.username, per_page=5).pages(3)):
+            print(i, "page")
+            process_page(page)
         return info
 
-    def get_timeline_tweets(self, num_tweets):
-        tweets = []
-        for tweet in tweepy.Cursor(self.api.home_timeline, screen_name=self.username).items(num_tweets):
-            tweets.append(tweet.text)
-        return tweets
-
-    def get_user_timeline_tweets(self, num_tweets):
-        tweets = []
-        for tweet in tweepy.Cursor(self.api.user_timeline, id=self.username).items(num_tweets):
-            tweets.append(tweet)
-        return tweets
-
+    def get_timeline_tweets(self, num_tweets=10, min_likes=100):
+        '''Returns tweets from user's timeline'''
+        num_tweets = int(num_tweets)
+        min_likes = int(min_likes)
+        info = []
+        num_page = int(num_tweets/5)
+        def process_page(page_results):
+            i = 1
+            for tweet in page_results:
+                if tweet.favorite_count > min_likes:
+                    info.append({'s.no.':i ,'tweet':tweet.text, 'author':tweet.author.screen_name, 'name':tweet.author.name, 'likes':tweet.favorite_count})
+                    i += 1
+            return info                    
+        for i, page in enumerate(tweepy.Cursor(self.api.home_timeline, screen_name=self.username, count=5).pages(num_page)):
+            print(i, "page")
+            process_page(page)
+        return info
+    
     def get_tweets_with_keywords(self, num_tweets, keywords):
+        '''Fetch tweets related to keywords'''
         tweets = []
         query = str(keywords)
-        # query = ' '.join(keywords)
-        # query = str(query)
-        # '#hathras -#shameonuppolice -@narendramodi'
-        # print(query)
         for i, status in enumerate(tweepy.Cursor(self.api.search, q=query).items(num_tweets)):
             tweets.append({'s_no':i, 'tweet':status.text, 'author':status.author.screen_name, 'name':status.author.name})
         return tweets
-
-class TwitterStreamer():
-    """
-    Class for streaming and processing live tweets
-    """
-    def __init__(self):
-        self.auth = Authenticator().authenticate()
-
-    def stream_tweets(self, filename, tag_list):
-        listener = TwitterListener(filename)
-        stream = tweepy.Stream(self.auth, listener)
-
-        stream.filter(track=tag_list)
-
-class TwitterListener(TwitterStreamer):
-    """
-    This prints receaved tweets
-    """
-    def __init__(self, filename):
-        self.filename = filename
-
-    def on_data(self, data):
-        try:
-            print(data)
-            with open(self.filename, 'a') as tf:
-                tf.write(data)
-            return True
-        except BaseException as e:
-            print(f"Error on_data {e}")
-        return True
-
-    def on_error(self, status):
-        if status == 420:
-            # rate limit
-            return False
-        print(status)
 
 class TweetAnalyzer():
     """
@@ -145,9 +139,11 @@ class TweetAnalyzer():
 
 
     def clean_tweet(self, tweet):
+        '''Cleaning the fetched tweets'''
         return ' '.join(re.sub(r"(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
 
     def analyze_sentiment(self, tweet):
+        '''Analyse the sentiments of fetched tweets'''
         analysis = TextBlob(self.clean_tweet(tweet))
 
         if analysis.sentiment.polarity > 0:
@@ -157,59 +153,36 @@ class TweetAnalyzer():
         else:
             return -1
 
-    
 
-# def create_figure(u_name):
-#     fig = Figure()
-#     axis = fig.add_subplot(1, 1, 1)
-#     info = Client(u_name)
-#     friends = info.get_friends()
-#     # xs = range(100)
-#     # ys = [random.randint(1, 50) for x in xs]
-#     axis.bar(friends.name, friends.friends)
-#     return fig
 
-# time_likes = pd.Series(data=df['len'].values, index=df['date'])
-# time_likes.plot(figsize=(16, 4), color='r')
-# plt.show()
+class Visualize(Client,TweetAnalyzer):
+    '''
+    To visualize the data by plots
+    '''        
 
-class visualize(Client, TweetAnalyzer):
-    """
-    To visualize the data of tweets
-    """
-    
-    def __init__(self, u_name=None, keywords=None):
-        # self.user = Client(u_name)
-        self.tweets = Client().api.user_timeline(screen_name=u_name, count=10)
-        self.tweets_for_keywords = Client().api.search(q=keywords, count=10)
+    def get_tweet_df(self):
+        '''Create dataframe of tweets to plot'''
+        tweets = self.api.user_timeline(screen_name=self.username, count=10)
+        df = self.tweets_to_df(tweets)
+        return df
 
-    # def visualize_likes(self):
-    #     fig = Figure()
-    #     axis = fig.add_subplot(1,1,1)
-    #     df = self.tweets_to_df(self.tweets)
-    #     time_likes = pd.Series(data=df['len'].values, index=df['date'])
-    #     axis.plot(time_likes, color='r')
-    #     plt.xticks(rotation=45)
-    #     return fig
+    def tweets_for_keywords(self, keywords):
+        '''Dataframe of tweets related to keywords'''
+        query = str(keywords)
+        tweets_for_keywords = self.api.search(q=query, count=10)
+        return tweets_for_keywords
 
-    # def visualize_retweets(self):
-    #     plt.figure()
-    #     plt.plot([1, 2])
-    #     plt.title("test")
-    #     buf = io.BytesIO()
-    #     plt.savefig(buf, format='png')
-    #     buf.seek(0)
-    #     im = Image.open(buf)
-    #     im.show()
-    #     buf.close()
 
 
     def visualize_likes(self):
+        '''
+        Plot likes on the fetched tweets
+        '''
         plt.figure(figsize=(20,10))
-        df = self.tweets_to_df(self.tweets)
+        df = self.get_tweet_df()
         time_likes = pd.Series(data=df['likes'].values, index=df['date'])
         plt.plot(time_likes, color='r')
-        plt.title('test')
+        plt.title('Visualizing Likes')
         plt.xticks(rotation=25)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -217,11 +190,14 @@ class visualize(Client, TweetAnalyzer):
         return buf
 
     def visualize_retweets(self):
+        '''
+        Plot retweets on fetched tweets
+        '''
         plt.figure(figsize=(20,10))
-        df = self.tweets_to_df(self.tweets)
+        df = self.get_tweet_df()
         time_retweets = pd.Series(data=df['retweets'].values, index=df['date'])
         plt.plot(time_retweets, color='r')
-        plt.title('test')
+        plt.title('Visualizing Retweets')
         plt.xticks(rotation=25)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -229,15 +205,18 @@ class visualize(Client, TweetAnalyzer):
         return buf
 
     def visualize_like_retweets(self):
+        '''
+        Plot likes and retweets on fetched tweets
+        '''
         plt.figure(figsize=(20,10))
-        df = self.tweets_to_df(self.tweets)
+        df = self.get_tweet_df()
         time_retweets = pd.Series(data=df['retweets'].values, index=df['date'])
         time_likes = pd.Series(data=df['likes'].values, index=df['date'])
         plt.plot(time_retweets, color='b', label='retweets')
         plt.legend()
         plt.plot(time_likes, color='r', label='likes')
         plt.legend()
-        plt.title('test')
+        plt.title('Visualize Likes and Retweets')
         plt.xticks(rotation=25)
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
@@ -246,8 +225,11 @@ class visualize(Client, TweetAnalyzer):
 
 
     def visualize_sentiments(self):
+        '''
+        Plot sentiments on fetched tweets
+        '''
         plt.figure(figsize=(20,10))
-        df = self.tweets_to_df(self.tweets)
+        df = self.get_tweet_df()
         df['sentiment'] = np.array([self.analyze_sentiment(tweet) for tweet in df['tweets']])
         time_sentiment = pd.Series(data=df['sentiment'].values, index=df['date'])
         plt.hist(time_sentiment, color='r')
@@ -258,9 +240,12 @@ class visualize(Client, TweetAnalyzer):
         buf.seek(0)
         return buf
 
-    def visualize_keyword_sentiments(self):
+    def visualize_keyword_sentiments(self, keywords):
+        '''
+        Plot sentiments on tweets related to given keywords
+        '''
         plt.figure(figsize=(20,10))
-        df = self.tweets_to_df(self.tweets_for_keywords)
+        df = self.tweets_to_df(self.tweets_for_keywords(keywords=keywords))
         df['sentiment'] = np.array([self.analyze_sentiment(tweet) for tweet in df['tweets']])
         time_sentiment = pd.Series(data=df['sentiment'].values, index=df['date'])
         plt.hist(time_sentiment, color='r')
@@ -272,26 +257,6 @@ class visualize(Client, TweetAnalyzer):
         return buf
 
 
-
-
-if __name__ == "__main__":
-                
-    client = Client()
-    tweet_analyzer = TweetAnalyzer()
-
-    api = client.api
-
-    tweets = api.user_timeline(screen_name='realDonaldTrump', count=10)
-
-    df = tweet_analyzer.tweets_to_df(tweets)
-
-    # print(np.mean(df['len']))
-
-    # print(df[df['likes'] == np.max(df['likes'])])
-
-    # print( df[df['retweets'] == np.min(df['retweets'])])
-
-    # print(df.head())
-    # time_retweets = pd.DataFrame(df[['retweets', 'tweets']].values, index=df['date'])
-
-    # print(time_retweets)
+##########################################################################################
+################################### Code Ends Here ######################################
+##########################################################################################
